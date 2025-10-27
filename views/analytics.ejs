@@ -1,0 +1,111 @@
+<%- include('partials/head', { title }) %>
+
+<h1 class="text-2xl font-semibold mb-4">Analytics</h1>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Top Categories</h2>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Category</th><th class="th">Products</th></tr></thead>
+      <tbody id="topCategories"></tbody>
+    </table>
+  </section>
+
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Sales by Day</h2>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Day</th><th class="th">Orders</th><th class="th">Total Sales</th></tr></thead>
+      <tbody id="salesByDay"></tbody>
+    </table>
+  </section>
+
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Vendors with Many Products</h2>
+    <div class="mb-2">
+      <label class="label">N</label>
+      <input id="vendorN" type="number" class="input" value="2"/>
+      <button id="vendorBtn" class="btn ml-2">Apply</button>
+    </div>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Vendor</th><th class="th">Email</th></tr></thead>
+      <tbody id="vendorsMany"></tbody>
+    </table>
+  </section>
+
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Products Not Ordered</h2>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Product</th><th class="th">Price</th></tr></thead>
+      <tbody id="productsNotOrdered"></tbody>
+    </table>
+  </section>
+
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Top Products</h2>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Product</th><th class="th">Qty Sold</th><th class="th">Revenue</th></tr></thead>
+      <tbody id="topProducts"></tbody>
+    </table>
+  </section>
+
+  <section class="bg-white border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">Product Ratings</h2>
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100"><tr><th class="th">Product</th><th class="th">Avg Rating</th><th class="th">Reviews</th></tr></thead>
+      <tbody id="productRatings"></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+  async function loadTopCategories() {
+    const rows = await fetch('/api/analytics/top-categories').then(r => r.json());
+    topCategories.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.name}</td><td class='td'>${r.product_count}</td></tr>`).join('');
+  }
+  async function loadSalesByDay() {
+    const rows = await fetch('/api/analytics/sales-by-day').then(r => r.json());
+    salesByDay.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.day}</td><td class='td'>${r.orders_count}</td><td class='td'>$${Number(r.total_sales).toFixed(2)}</td></tr>`).join('');
+  }
+  async function loadVendorsMany(n=2) {
+    const rows = await fetch('/api/analytics/vendors-with-many-products?n=' + n).then(r => r.json());
+    vendorsMany.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.name}</td><td class='td'>${r.email || ''}</td></tr>`).join('');
+  }
+  async function loadProductsNotOrdered() {
+    const rows = await fetch('/api/analytics/products-not-ordered').then(r => r.json());
+    productsNotOrdered.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.name}</td><td class='td'>$${Number(r.price).toFixed(2)}</td></tr>`).join('');
+  }
+  async function loadTopProducts() {
+    const rows = await fetch('/api/analytics/top-products').then(r => r.json());
+    topProducts.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.name}</td><td class='td'>${r.qty_sold}</td><td class='td'>$${Number(r.revenue).toFixed(2)}</td></tr>`).join('');
+  }
+  async function loadProductRatings() {
+    const rows = await fetch('/api/analytics/product-ratings').then(r => r.json());
+    productRatings.innerHTML = rows.map(r => `<tr class='border-t'><td class='td'>${r.name}</td><td class='td'>${r.avg_rating ? Number(r.avg_rating).toFixed(2) : '-'}</td><td class='td'>${r.reviews_count}</td></tr>`).join('');
+  }
+
+  const topCategories = document.getElementById('topCategories');
+  const salesByDay = document.getElementById('salesByDay');
+  const vendorsMany = document.getElementById('vendorsMany');
+  const productsNotOrdered = document.getElementById('productsNotOrdered');
+  const topProducts = document.getElementById('topProducts');
+  const productRatings = document.getElementById('productRatings');
+  const vendorN = document.getElementById('vendorN');
+  const vendorBtn = document.getElementById('vendorBtn');
+
+  vendorBtn.onclick = () => loadVendorsMany(Number(vendorN.value || 2));
+
+  (async function init() {
+    try {
+      await loadTopCategories();
+      await loadSalesByDay();
+      await loadVendorsMany(Number(vendorN.value));
+      await loadProductsNotOrdered();
+      await loadTopProducts();
+      await loadProductRatings();
+    } catch (err) {
+      console.warn('Analytics init error', err);
+    }
+  })();
+</script>
+
+<%- include('partials/foot') %>

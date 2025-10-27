@@ -1,0 +1,154 @@
+<%- include('partials/head', { title }) %>
+
+<h1 class="text-2xl font-semibold mb-4">Orders</h1>
+
+<div class="bg-white border rounded-lg p-4 mb-6">
+  <h2 class="font-semibold mb-3">Create Order</h2>
+  <div class="grid md:grid-cols-3 gap-3">
+    <div>
+      <label class="label">Customer</label>
+      <select id="customer" class="input"></select>
+    </div>
+    <div>
+      <label class="label">Status</label>
+      <select id="status" class="input">
+        <option value="pending">pending</option>
+        <option value="paid">paid</option>
+        <option value="shipped">shipped</option>
+        <option value="cancelled">cancelled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <h3 class="font-semibold mb-2">Items</h3>
+    <div id="items"></div>
+    <button id="addItem" class="btn mt-2">Add Item</button>
+  </div>
+  <div class="mt-4">
+    <button id="createOrder" class="btn-primary">Create Order</button>
+  </div>
+</div>
+
+<div class="bg-white border rounded-lg">
+  <table class="min-w-full">
+    <thead class="bg-gray-100 text-sm">
+      <tr>
+        <th class="th">ID</th>
+        <th class="th">Customer</th>
+        <th class="th">Status</th>
+        <th class="th">Created</th>
+        <th class="th">Items</th>
+        <th class="th">Total</th>
+        <th class="th">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="ordersBody" class="text-sm"></tbody>
+  </table>
+</div>
+
+<script>
+  const api = {
+    orders: '/api/orders',
+    products: '/api/products',
+    customers: '/api/customers'
+  };
+
+  const els = {
+    customer: document.getElementById('customer'),
+    status: document.getElementById('status'),
+    items: document.getElementById('items'),
+    addItem: document.getElementById('addItem'),
+    createOrder: document.getElementById('createOrder'),
+    ordersBody: document.getElementById('ordersBody'),
+  };
+
+  let products = [];
+
+  function itemRow(index) {
+    return `
+      <div class="grid md:grid-cols-3 gap-3 mb-2" data-index="${index}">
+        <select class="input itemProduct"></select>
+        <input class="input itemQty" type="number" placeholder="Quantity" min="1" value="1"/>
+        <button class="btn-danger removeItem">Remove</button>
+      </div>
+    `;
+  }
+
+  function refreshItemSelects() {
+    document.querySelectorAll('.itemProduct').forEach(sel => {
+      sel.innerHTML = products.map(p => `<option value="${p.id}">${p.name} ($${Number(p.price).toFixed(2)})</option>`).join('');
+    });
+  }
+
+  els.addItem.onclick = () => {
+    const idx = els.items.children.length;
+    els.items.insertAdjacentHTML('beforeend', itemRow(idx));
+    refreshItemSelects();
+    els.items.lastElementChild.querySelector('.removeItem').onclick = (e) => {
+      e.target.closest('[data-index]').remove();
+    };
+  };
+
+  async function loadCustomersAndProducts() {
+    const [custs, prods] = await Promise.all([
+      fetch(api.customers).then(r => r.json()),
+      fetch(api.products).then(r => r.json())
+    ]);
+    products = prods;
+    els.customer.innerHTML = custs.map(c => `<option value="${c.id}">${c.name} (${c.email})</option>`).join('');
+    refreshItemSelects();
+  }
+
+  async function loadOrders() {
+    const rows = await fetch(api.orders).then(r => r.json());
+    els.ordersBody.innerHTML = rows.map(r => `
+      <tr class="border-t">
+        <td class="td">${r.id}</td>
+        <td class="td">${r.customer_name}</td>
+        <td class="td">${r.status}</td>
+        <td class="td">${new Date(r.created_at).toLocaleString()}</td>
+        <td class="td">${r.item_count}</td>
+        <td class="td">$${Number(r.total_amount).toFixed(2)}</td>
+        <td class="td">
+          <button class="btn-danger" onclick="cancel(${r.id})">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function cancel(id) {
+    if (!confirm('Delete order? Stock will be restored.')) return;
+    const r = await fetch(`${api.orders}/${id}`, { method: 'DELETE' });
+    if (r.ok) loadOrders(); else alert('Delete failed');
+  }
+
+  els.createOrder.onclick = async () => {
+    const items = [...els.items.children].map(row => {
+      const product_id = Number(row.querySelector('.itemProduct').value);
+      const quantity = Number(row.querySelector('.itemQty').value);
+      return { product_id, quantity };
+    }).filter(i => i.quantity > 0);
+    if (!items.length) return alert('Add at least one item');
+    const payload = { customer_id: Number(els.customer.value), status: els.status.value, items };
+    const r = await fetch(api.orders, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (r.ok) {
+      els.items.innerHTML = '';
+      loadOrders();
+    } else {
+      const txt = await r.text();
+      alert('Create failed: ' + txt);
+    }
+  };
+
+  (async function init() {
+    try {
+      await loadCustomersAndProducts();
+      await loadOrders();
+    } catch (err) {
+      console.warn('Init error', err);
+    }
+  })();
+</script>
+
+<%- include('partials/foot') %>

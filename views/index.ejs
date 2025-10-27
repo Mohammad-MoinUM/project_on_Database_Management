@@ -1,0 +1,41 @@
+<%- include('partials/head', { title }) %>
+<section class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <a href="/products" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Products</h2>
+      <p>Manage products, filtering, search, and CRUD operations.</p>
+    </div>
+  </a>
+  <a href="/categories" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Categories</h2>
+      <p>Manage product categories and relationships.</p>
+    </div>
+  </a>
+  <a href="/vendors" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Vendors</h2>
+      <p>Manage marketplace vendors.</p>
+    </div>
+  </a>
+  <a href="/customers" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Customers</h2>
+      <p>Manage customers and their details.</p>
+    </div>
+  </a>
+  <a href="/orders" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Orders</h2>
+      <p>Create orders with items; view totals and item counts.</p>
+    </div>
+  </a>
+  <a href="/analytics" class="card">
+    <div class="card-body">
+      <h2 class="card-title">Analytics</h2>
+      <p>Demonstrates joins, subqueries, aggregations, and group-by queries.</p>
+    </div>
+  </a>
+</section>
+
+<%- include('partials/foot') %>
